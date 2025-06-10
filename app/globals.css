@@ -1,0 +1,25 @@
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0f0f0f;
+  --foreground: #f0f0f0;
+  --muted: #1e1e1e;
+  --accent: #bb86fc;
+  --accent-hover: #9a67ea;
+  --radius: 12px;
+}
+
+body {
+  @apply min-h-screen bg-[var(--background)] text-[var(--foreground)] font-sans antialiased;
+}
+
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-600 rounded-full;
+}
