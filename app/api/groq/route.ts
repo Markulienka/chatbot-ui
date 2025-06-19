@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
 
         const API_KEY = process.env.GROQ_API_KEY;
-        const URL = process.env.GROQ_URL;
+        const URL = process.env.GROQ_URL!;
         const API_OPTIONS = {
             method: "POST",
             headers: {

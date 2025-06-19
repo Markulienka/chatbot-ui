@@ -1,31 +1,30 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+
+interface Messages {
+    role: "user" | "assistant";
+    content: string;
+}
 
 export function useChatHooks() {
     const [isLoading, setIsLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [input, setInput] = useState("");
-    const [result, setResult] = useState(null);
+    const [messages, setMessages] = useState<Messages[]>([]);
     const [hasTyped, setHasTyped] = useState(false);
 
-    // useEffect(() => {
-    //     if (hasTyped && onUserTyping) {
-    //         onUserTyping();
-    //     }
-    // }, [hasTyped, onUserTyping]);
-
-     const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setInput(value);
-        // if (value.trim() !== "" && !hasTyped) {
-        //     setHasTyped(true);
-        // }
+        if (value.trim() !== "" && !hasTyped) {
+            setHasTyped(true);
+        }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
         setErrorMessage(null);
-        setResult(null);
+        setMessages(prev => [...prev, { role: "user", content: input }]);
     
         const res = {
             method: "POST",
@@ -39,12 +38,17 @@ export function useChatHooks() {
             const response = await fetch("/api/groq", res);
             if (!response.ok) throw new Error("Error fetching data");
             const data = await response.json();
-            setResult(data.choices[0].message.content);
+            setMessages(prev => [...prev, { role: "assistant", content: data.choices[0].message.content}]);
             console.log("DATA:", data);
             console.log("CONTENT:", data.choices[0].message.content);
+            console.log("MESSAGES", messages);
             setInput("");
-        } catch (error) {
-            setErrorMessage(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                setErrorMessage(error.message);
+            } else {
+                setErrorMessage("Unknown error");
+            }
         } finally { 
             setIsLoading(false);
         }
@@ -53,7 +57,7 @@ export function useChatHooks() {
         isLoading,
         errorMessage,
         input,
-        result, 
+        messages, 
         hasTyped,
         handleSubmit,
         handleChange
