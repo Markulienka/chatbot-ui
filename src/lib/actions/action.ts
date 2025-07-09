@@ -19,3 +19,15 @@ export async function signInWithGoogle() {
 
   redirect(data.url);
 }
+
+export async function signOut() {
+  const supabase = await createClientForServer();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error('Sign out error:', error);
+    throw error;
+  }
+
+  redirect(`${process.env.NEXT_PUBLIC_URL}/login`);
+}

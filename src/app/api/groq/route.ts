@@ -13,11 +13,8 @@ export async function POST(req: NextRequest) {
                 Authorization: `Bearer ${API_KEY}`,
             },
             body: JSON.stringify({
-                "model": "meta-llama/llama-4-scout-17b-16e-instruct",
-                "messages": [{
-                    "role": "user",
-                    "content": body.messages
-                }]
+                "model": "LLaMA-3.3-70B-Versatile",
+                "messages": body.messages
             })
         };
 

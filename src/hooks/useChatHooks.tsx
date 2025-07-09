@@ -24,35 +24,49 @@ export function useChatHooks() {
         e.preventDefault();
         setIsLoading(true);
         setErrorMessage(null);
-        setMessages(prev => [...prev, { role: "user", content: input }]);
-    
+        const newMessage = { role: "user" as const, content: input };
+        const updated = [...messages, newMessage];
+        setMessages(updated);
+        setInput("");
+
         const res = {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({messages: input}),
+            body: JSON.stringify({ messages: updated }),
         };
-
         try {
             const response = await fetch("/api/groq", res);
             if (!response.ok) throw new Error("Error fetching data");
             const data = await response.json();
-            setMessages(prev => [...prev, { role: "assistant", content: data.choices[0].message.content}]);
-            console.log("DATA:", data);
-            console.log("CONTENT:", data.choices[0].message.content);
-            console.log("MESSAGES", messages);
-            setInput("");
-        } catch (error: unknown) {
+            if (data && Array.isArray(data.choices) && data.choices[0]?.message?.content) {
+                const assistantMessage = { role: "assistant" as const, content: data.choices[0].message.content };
+                setMessages(prev2 => {
+                    const updatedMessages = [...prev2, assistantMessage];
+                    fetch("/api/conversation", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ messages: updatedMessages }),
+                    });
+                    return updatedMessages;
+                });
+            } else if (data?.error) {
+                setMessages(prev2 => [...prev2, { role: "assistant", content: "Nastala chyba: " + data.error }]);
+            } else {
+                setMessages(prev2 => [...prev2, { role: "assistant", content: "Neočakávaná odpoveď od servera." }]);
+            }
+        } catch (error) {
             if (error instanceof Error) {
                 setErrorMessage(error.message);
             } else {
                 setErrorMessage("Unknown error");
             }
-        } finally { 
+        } finally {
             setIsLoading(false);
         }
     }
+
     return {
         isLoading,
         errorMessage,
