@@ -1,3 +1,4 @@
+import { useAutoScroll } from "./useAutoScroll";
 import Message from "../Message";
 
 interface MessageListProps {
@@ -8,6 +9,8 @@ interface MessageListProps {
 }
 
 export default function MessageList({ messages }: MessageListProps) {
+  const bottomRef = useAutoScroll([messages]);
+
   return (
     <div
       className="
@@ -19,6 +22,7 @@ export default function MessageList({ messages }: MessageListProps) {
       {messages.map((message, i) => (
         <Message key={i} message={message} />
       ))}
+      <div ref={bottomRef} />
     </div>
   );
 }

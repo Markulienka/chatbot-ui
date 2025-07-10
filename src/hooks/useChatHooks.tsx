@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface Messages {
     role: "user" | "assistant";
@@ -9,8 +9,35 @@ export function useChatHooks() {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [input, setInput] = useState("");
-    const [messages, setMessages] = useState<Messages[]>([]);
     const [hasTyped, setHasTyped] = useState(false);
+    const [messages, setMessages] = useState<Messages[]>([]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('chat_messages');
+            if (saved) {
+                try {
+                    setMessages(JSON.parse(saved));
+                } catch {
+                    setMessages([]);
+                }
+            }
+        }
+    }, []);
+
+    const saveMessages = (msgs: Messages[]) => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('chat_messages', JSON.stringify(msgs));
+        }
+    };
+
+    const addMessage = (msg: Messages) => {
+        setMessages(prev => {
+            const updated = [...prev, msg];
+            saveMessages(updated);
+            return updated;
+        });
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
@@ -27,13 +54,12 @@ export function useChatHooks() {
         const newMessage = { role: "user" as const, content: input };
         const updated = [...messages, newMessage];
         setMessages(updated);
+        saveMessages(updated);
         setInput("");
 
         const res = {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ messages: updated }),
         };
         try {
@@ -41,20 +67,11 @@ export function useChatHooks() {
             if (!response.ok) throw new Error("Error fetching data");
             const data = await response.json();
             if (data && Array.isArray(data.choices) && data.choices[0]?.message?.content) {
-                const assistantMessage = { role: "assistant" as const, content: data.choices[0].message.content };
-                setMessages(prev2 => {
-                    const updatedMessages = [...prev2, assistantMessage];
-                    fetch("/api/conversation", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ messages: updatedMessages }),
-                    });
-                    return updatedMessages;
-                });
+                addMessage({ role: "assistant", content: data.choices[0].message.content });
             } else if (data?.error) {
-                setMessages(prev2 => [...prev2, { role: "assistant", content: "Nastala chyba: " + data.error }]);
+                addMessage({ role: "assistant", content: "Nastala chyba: " + data.error });
             } else {
-                setMessages(prev2 => [...prev2, { role: "assistant", content: "Neočakávaná odpoveď od servera." }]);
+                addMessage({ role: "assistant", content: "Neočakávaná odpoveď od servera." });
             }
         } catch (error) {
             if (error instanceof Error) {
@@ -65,15 +82,15 @@ export function useChatHooks() {
         } finally {
             setIsLoading(false);
         }
-    }
+    };
 
     return {
         isLoading,
         errorMessage,
         input,
-        messages, 
+        messages,
         hasTyped,
         handleSubmit,
-        handleChange
+        handleChange,
     };
 }
